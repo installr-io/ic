@@ -1,0 +1,51 @@
+# quarkus configuration
+quarkus:
+    log:
+        level: WARN
+        console:
+            stderr: true
+            format: '%-5p %s%e%n'
+
+        category:
+            "io.installr":
+                level: INFO
+
+    banner:
+        enabled: false
+
+    package:
+        jar:
+            add-runner-suffix: false
+            type: uber-jar
+            user-configured-ignored-entries:
+                - META-INF/maven/org.jctools/jctools-core/pom.properties
+                - META-INF/maven/org.jctools/jctools-core/pom.xml
+                - META-INF/quarkus-config-doc/quarkus-config-model-version
+                - META-INF/quarkus-config-doc/quarkus-config-model.json
+
+    devservices:
+        enabled: false
+
+    index-dependency:
+        lib-installrd:
+            group-id: "io.installr"
+            artifact-id: "installr-lib-installrd"
+
+ic:
+    default-namespace: default
+    installrd-url: http://localhost:9316
+
+"%dev":
+    quarkus:
+        log:
+            category:
+                "io.installr":
+                    level: DEBUG
+                    min-level: DEBUG
+
+"%prod":
+    smallrye:
+        config:
+            ## read build properties
+            locations: META-INF/build.properties
+

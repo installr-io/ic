@@ -1,0 +1,59 @@
+{
+    "editor.insertSpaces": true,
+    "editor.tabSize": 4,
+    "[yaml]": {
+        "editor.tabSize": 4
+    },
+    "[dockercompose]": {
+        "editor.tabSize": 4
+    },
+    "editor.detectIndentation": false,
+    "editor.rulers": [
+        120
+    ],
+
+    "java.configuration.updateBuildConfiguration": "automatic",
+
+    "java.format.comments.enabled": true,
+    "java.format.enabled": true,
+    "java.format.onType.enabled": true,
+    "java.format.settings.profile": "installer-io",
+    "java.format.settings.url": "../installr/code-format/src/main/resources/java-code-format.xml",
+
+    "java.templates.fileHeader": [
+        "/*",
+        " * Installr.io",
+        " *",
+        " * Copyright (c) 2025-present The Installr.io Authors",
+        " * (See the AUTHORS file for a full list of contributors.)",
+        " *",
+        " * This file is part of Installr.io project",
+        " *",
+        " * This program is free software: you can redistribute it and/or modify",
+        " * it under the terms of the GNU Affero General Public License as published by",
+        " * the Free Software Foundation, either version 3 of the License, or",
+        " * (at your option) any later version.",
+        " *",
+        " * This program is distributed in the hope that it will be useful",
+        " * but WITHOUT ANY WARRANTY; without even the implied warranty of",
+        " * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the",
+        " * GNU Affero General Public License for more details.",
+        " *",
+        " * You should have received a copy of the GNU Affero General Public License",
+        " * along with this program.  If not, see <http: www.gnu.org/licenses/>.",
+        " */",
+    ],
+    "java.debug.settings.onBuildFailureProceed": true,
+    "java.test.config": {
+        "vmArgs": [ "-Djava.util.logging.manager=org.jboss.logmanager.LogManager" ]
+    },
+    "cSpell.words": [
+        "installr",
+        "installrd",
+        "quarkus",
+        "Vallant"
+    ],
+    "microprofile.tools.validation.unassigned.excluded": [
+        "quarkus.application.version"
+    ]
+}

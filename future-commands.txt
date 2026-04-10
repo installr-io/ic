@@ -1,0 +1,19 @@
+ic namespace ls
+ic namespace add
+ic namespace rm
+ic namespace configure ?
+
+ic -n <namespace> package ls             # show installed packages
+ic -n <namespace> package ls --available # show available packages
+ic -n <namespace> package install ?
+ic -n <namespace> package configure -y <packagename>
+Package <packagename> currently not installed. Would you like to configure it anyway? [Y/n] 
+Downloading package <packagename> to get it's configuration...
+Package <packagename> not found in any repository. Would you like to proceed? [y/N]
+=> open vi with empty file
+=> if found: open vi with a copy of the defaults.yaml where all values are uncommented.
+
+ic repository ls
+ic repository add
+ic repository rm
+

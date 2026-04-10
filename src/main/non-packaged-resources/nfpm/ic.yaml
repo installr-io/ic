@@ -1,0 +1,36 @@
+name: ${project.artifactId}
+arch: all # = noarch
+platform: linux
+version: ${project.version}
+release: 1
+
+maintainer: ${maintainer.name} <${maintainer.email}>
+description: ${project.description}
+vendor: ${project.organization.name}
+homepage: ${project.organization.url}
+license: AGPL-3.0-only
+
+depends:
+    - java-21-openjdk-headless
+
+contents:
+    - dst: ${ic-bin.directory}
+      type: dir
+      file_info:
+          mode: 0755
+          owner: ${ic-user}
+          group: ${ic-user}
+
+    - src: target/${project.build.finalName}
+      dst: ${ic-bin.directory}/${project.build.finalName}
+      file_info:
+          mode: 0750
+          owner: ${ic-user}
+          group: ${ic-user}
+
+scripts:
+    preinstall: target/non-packaged-resources/rpm/pre-install.sh
+
+rpm:
+    signature:
+        key_file: secret.key

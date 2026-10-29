@@ -25,9 +25,9 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
-import org.apache.commons.lang3.function.TriFunction;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import io.installr.cli.log.ConsoleLog;
@@ -37,6 +37,7 @@ import io.installr.lib.installrd.event.Event;
 import io.installr.lib.installrd.event.Events;
 import io.installr.lib.installrd.event.Status;
 import io.installr.lib.installrd.resource.InstallFileResource;
+import io.installr.lib.installrd.resource.InstallPackageResource;
 import io.installr.lib.installrd.resource.InstallResource;
 import io.installr.lib.pkg.PackageId;
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
@@ -81,7 +82,7 @@ abstract class AbstractInstallCommand extends AbstractCommand {
 
     @SneakyThrows
     protected final void run(
-        TriFunction<InstallController, InstallResource, InstallFileResource, Multi<Event>> executor
+        BiFunction<InstallController, InstallResource, Multi<Event>> executor
     ) {
         final InstallController installr = QuarkusRestClientBuilder.newBuilder()
             .userAgent( "ic/" + version )
@@ -115,12 +116,12 @@ abstract class AbstractInstallCommand extends AbstractCommand {
 
     protected Multi<Event> execute(
         InstallController installr,
-        TriFunction<InstallController, InstallResource, InstallFileResource, Multi<Event>> executor
+        BiFunction<InstallController, InstallResource, Multi<Event>> executor
     ) {
         if ( packages.getPackageIds() != null ) {
-            final InstallResource resource = new InstallResource();
+            final InstallPackageResource resource = new InstallPackageResource();
             resource.setPackageIds( packages.getPackageIds() );
-            return executor.apply( installr, resource, null );
+            return executor.apply( installr, resource );
         }
         else if ( packages.getPackageFiles() != null ) {
             final InstallFileResource resource = new InstallFileResource();
@@ -130,7 +131,7 @@ abstract class AbstractInstallCommand extends AbstractCommand {
                     .map( Path::toString )
                     .toList()
             );
-            return executor.apply( installr, null, resource );
+            return executor.apply( installr, resource );
         }
         throw new IllegalStateException( "packageIds && files is null" );
     }

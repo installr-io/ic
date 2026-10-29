@@ -17,6 +17,8 @@
  */
 package io.installr.cli.command;
 
+import io.installr.lib.installrd.resource.InstallFileResource;
+import io.installr.lib.installrd.resource.InstallPackageResource;
 import picocli.CommandLine.Command;
 
 @Command(
@@ -28,11 +30,11 @@ public class ReInstallCommand extends AbstractInstallCommand {
     @Override
     public void run() {
         super.run(
-            ( installr, pkgResource, fileResource ) -> {
-                if ( pkgResource != null ) {
+            ( installr, resource ) -> {
+                if ( resource instanceof InstallPackageResource pkgResource ) {
                     return installr.reinstall( namespace(), pkgResource );
                 }
-                if ( fileResource != null ) {
+                if ( resource instanceof InstallFileResource fileResource ) {
                     return installr.reinstall( namespace(), fileResource );
                 }
                 throw new IllegalStateException();

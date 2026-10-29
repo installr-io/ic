@@ -17,7 +17,6 @@
  */
 package io.installr.cli.command;
 
-import java.net.URL;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.List;
@@ -27,10 +26,15 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
+import javax.net.ssl.SSLHandshakeException;
+
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import io.installr.cli.log.ConsoleLog;
 import io.installr.cli.paramgroup.PackageParamGroup;
+import io.installr.lib.installrd.client.ClientConfiguration;
+import io.installr.lib.installrd.client.InstallrdClients;
+import io.installr.lib.installrd.client.InstallrdConnection;
 import io.installr.lib.installrd.controller.InstallController;
 import io.installr.lib.installrd.event.Event;
 import io.installr.lib.installrd.event.Events;
@@ -39,10 +43,10 @@ import io.installr.lib.installrd.resource.InstallFileResource;
 import io.installr.lib.installrd.resource.InstallPackageResource;
 import io.installr.lib.installrd.resource.InstallResource;
 import io.installr.lib.pkg.PackageId;
-import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import io.smallrye.mutiny.Multi;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.ClientErrorException;
+import jakarta.ws.rs.NotAuthorizedException;
 import jakarta.ws.rs.core.Response;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -61,8 +65,8 @@ abstract class AbstractInstallCommand extends AbstractCommand {
     @ArgGroup( exclusive = true, multiplicity = "1" )
     protected PackageParamGroup packages;
 
-    @ConfigProperty( name = "ic.installrd-url" )
-    URL installrdUrl;
+    @ConfigProperty( name = "ic.config-file" )
+    String configFile;
 
     @Inject
     ConsoleLog log;
@@ -76,11 +80,12 @@ abstract class AbstractInstallCommand extends AbstractCommand {
     protected final void run(
         BiFunction<InstallController, InstallResource, Multi<Event>> executor
     ) {
-        final InstallController installr = QuarkusRestClientBuilder.newBuilder()
-            .userAgent( "ic/" + version )
-            .baseUrl( installrdUrl )
-            .register( InstallrExceptionMapper.class )
-            .build( InstallController.class );
+        final InstallrdConnection connection = ClientConfiguration.load( Path.of( configFile ) ).select( configName() );
+        final InstallController installr = InstallrdClients.create(
+            connection,
+            "ic/" + version,
+            InstallrExceptionMapper.class
+        );
         try {
             // blocks until the event stream is completed; failures are thrown in this thread
             execute( installr, executor )
@@ -91,8 +96,24 @@ abstract class AbstractInstallCommand extends AbstractCommand {
                 .await()
                 .indefinitely();
         }
+        catch ( NotAuthorizedException ex ) {
+            throw new RuntimeException(
+                String.format( "installrd (config '%s') did not accept the client certificate.", connection.name() ),
+                ex
+            );
+        }
         catch ( ClientErrorException ex ) {
             throw new RuntimeException( errorMessage( ex ), ex );
+        }
+        catch ( RuntimeException ex ) {
+            final SSLHandshakeException sslEx = findCause( ex, SSLHandshakeException.class );
+            if ( sslEx != null ) {
+                throw new RuntimeException(
+                    String.format( "TLS handshake with %s failed: %s", connection.url(), sslEx.getMessage() ),
+                    ex
+                );
+            }
+            throw ex;
         }
         final Status status = txStatus.get();
         if ( status == null ) {
@@ -115,7 +136,19 @@ abstract class AbstractInstallCommand extends AbstractCommand {
         catch ( RuntimeException ignored ) {
             // empty or non-JSON body
         }
+        if ( response.getStatus() == 403 ) {
+            return "Access denied.";
+        }
         return String.format( "%d %s", response.getStatus(), response.getStatusInfo().getReasonPhrase() );
+    }
+
+    private static <T extends Throwable> T findCause( Throwable t, Class<T> type ) {
+        for ( Throwable cause = t; cause != null; cause = cause.getCause() ) {
+            if ( type.isInstance( cause ) ) {
+                return type.cast( cause );
+            }
+        }
+        return null;
     }
 
     protected Multi<Event> execute(

@@ -33,7 +33,7 @@ quarkus:
 
 ic:
     default-namespace: default
-    installrd-url: http://localhost:9316
+    config-file: ${user.home}/.ic/config.yaml
 
 "%dev":
     quarkus:

@@ -33,6 +33,10 @@ abstract class AbstractCommand implements Runnable {
         return mainCommand.namespace;
     }
 
+    String configName() {
+        return mainCommand.config;
+    }
+
     @Override
     public abstract void run();
 

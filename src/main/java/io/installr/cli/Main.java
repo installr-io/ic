@@ -77,6 +77,14 @@ public class Main implements QuarkusApplication {
             arity = "1"
         )
         public String namespace;
+
+        @Option(
+            names = { "-c", "--config" },
+            description = "Set the config (installrd connection) of ~/.ic/config.yaml to use; " + "default: 'default-config' of ~/.ic/config.yaml.",
+            scope = ScopeType.INHERIT,
+            arity = "1"
+        )
+        public String config;
     }
 
     // https://github.com/quarkusio/quarkus/issues/29379#issuecomment-1879795931

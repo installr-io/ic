@@ -22,7 +22,6 @@ import java.nio.file.Path;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
@@ -44,10 +43,10 @@ import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import io.smallrye.mutiny.Multi;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.ClientErrorException;
+import jakarta.ws.rs.core.Response;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.SneakyThrows;
 import picocli.CommandLine.ArgGroup;
 
 abstract class AbstractInstallCommand extends AbstractCommand {
@@ -58,12 +57,6 @@ abstract class AbstractInstallCommand extends AbstractCommand {
     static class ErrorResponse {
         private String message;
     }
-
-    // @ClientExceptionMapper
-    // static RuntimeException toException( Response response ) {
-    // final ErrorResponse entity = response.readEntity( ErrorResponse.class );
-    // return new RuntimeException( entity.getMessage() );
-    // }
 
     @ArgGroup( exclusive = true, multiplicity = "1" )
     protected PackageParamGroup packages;
@@ -80,7 +73,6 @@ abstract class AbstractInstallCommand extends AbstractCommand {
     private final AtomicReference<Status> txStatus = new AtomicReference<>();
     private final AtomicInteger totalPackages = new AtomicInteger( 0 );
 
-    @SneakyThrows
     protected final void run(
         BiFunction<InstallController, InstallResource, Multi<Event>> executor
     ) {
@@ -89,29 +81,41 @@ abstract class AbstractInstallCommand extends AbstractCommand {
             .baseUrl( installrdUrl )
             .register( InstallrExceptionMapper.class )
             .build( InstallController.class );
-        final AtomicBoolean finished = new AtomicBoolean( false );
-        execute( installr, executor )
-            .onCompletion()
-            .invoke( () -> finished.set( true ) )
-            .onFailure()
-            .invoke( ( t ) -> {
-                finished.set( true );
-                new RuntimeException( t );
-            } )
-            .subscribe()
-            .with( this::writeLog, ( t ) -> {
-                finished.set( true );
-                if ( t instanceof ClientErrorException cex ) {
-                    final ErrorResponse er = cex.getResponse().readEntity( ErrorResponse.class );
-                    log.error( er.getMessage() );
-                }
-            } );
-        while ( !finished.get() ) {
-            Thread.sleep( 500 );
+        try {
+            // blocks until the event stream is completed; failures are thrown in this thread
+            execute( installr, executor )
+                .onItem()
+                .invoke( this::writeLog )
+                .collect()
+                .last()
+                .await()
+                .indefinitely();
         }
-        // if ( !txStatus.get().equals( Status.Success ) ) {
-        // throw new DeploymentException( "FAILED" );
-        // }
+        catch ( ClientErrorException ex ) {
+            throw new RuntimeException( errorMessage( ex ), ex );
+        }
+        final Status status = txStatus.get();
+        if ( status == null ) {
+            throw new RuntimeException( "installrd closed the connection before the transaction finished." );
+        }
+        if ( status.type() != Status.Type.Success && status.type() != Status.Type.Skipped ) {
+            // details are already logged with the TransactionFinished event
+            throw new RuntimeException( String.format( "Transaction failed (%s).", status.type() ) );
+        }
+    }
+
+    private static String errorMessage( ClientErrorException ex ) {
+        final Response response = ex.getResponse();
+        try {
+            final ErrorResponse er = response.readEntity( ErrorResponse.class );
+            if ( er != null && er.getMessage() != null && !er.getMessage().isBlank() ) {
+                return er.getMessage();
+            }
+        }
+        catch ( RuntimeException ignored ) {
+            // empty or non-JSON body
+        }
+        return String.format( "%d %s", response.getStatus(), response.getStatusInfo().getReasonPhrase() );
     }
 
     protected Multi<Event> execute(

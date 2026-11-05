@@ -93,3 +93,14 @@ jobs:
                     --fail-on-no-commits \
                     --verify-tag \
                     "$tag" ./ic-*.rpm
+
+    publish-homepage:
+        needs: create-release
+        environment: release
+        permissions: {}
+        runs-on: ubuntu-latest
+        steps:
+            - name: Publish the homepage with the new release
+              env:
+                  GH_TOKEN: ${{ secrets.HOMEPAGE_TOKEN }}
+              run: gh workflow run homepage.yaml --repo installr-io/installr

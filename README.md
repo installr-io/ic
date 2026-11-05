@@ -57,5 +57,5 @@ sed 's/^/      /' alice.crt
 ic -c prod -n demo install demo-app:0.1.0
 ```
 
-See the [installrd documentation](https://github.com/installr-io/installr/blob/main/INSTALL.md) for how to create
-certificates and grant roles.
+See the [installation guide](https://github.com/installr-io/installr/blob/main/docs/INSTALL.md#4-set-up-security-mtls--roles)
+for how to create certificates and grant roles.

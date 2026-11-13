@@ -86,9 +86,12 @@ jobs:
                   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
                   tag: ${{ github.ref_name }}
               run: |
+                latest=$( gh release view --repo="$GITHUB_REPOSITORY" --json tagName --jq .tagName 2> /dev/null || true )
+                newest=$( printf '%s\n' "$latest" "$tag" | sort -V | tail -1 )
                 gh release create \
                     --repo="$GITHUB_REPOSITORY" \
                     --title="${tag}" \
+                    --latest=$( [ "$newest" = "$tag" ] && echo true || echo false ) \
                     --generate-notes \
                     --fail-on-no-commits \
                     --verify-tag \

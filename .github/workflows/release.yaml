@@ -93,7 +93,6 @@ jobs:
                     --title="${tag}" \
                     --latest=$( [ "$newest" = "$tag" ] && echo true || echo false ) \
                     --generate-notes \
-                    --fail-on-no-commits \
                     --verify-tag \
                     "$tag" ./ic-*.rpm
 

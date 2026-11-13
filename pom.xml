@@ -29,7 +29,7 @@
     </parent>
 
     <artifactId>ic</artifactId>
-    <version>0.2.0-SNAPSHOT</version>
+    <version>0.2.0</version>
 
     <description>ic - A command-line client for installrd</description>
     <url>https://installr.io</url>

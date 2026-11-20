@@ -9,6 +9,7 @@ on:
 
 permissions:
     contents: read
+    packages: read
 
 jobs:
     build:
@@ -26,5 +27,5 @@ jobs:
 
             - name: Build
               env:
-                  GITHUB_TOKEN: ${{ secrets.PA_TOKEN }}
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
               run: mvn -B clean verify
